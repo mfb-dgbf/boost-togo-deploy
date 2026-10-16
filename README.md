@@ -29,14 +29,14 @@ dashboard or ETL code.
 
 `make fetch` checks out the commits in `upstream.lock` under `upstream/`.
 
-- **Dashboard:** a commit on the [mfb-dgbf fork](https://github.com/mfb-dgbf/rpf-country-dash)
-  that merges upstream `Togo` (which includes upstream `main`) with the branch
-  `upstream.lock` names, not merged upstream yet. The fetch stops if the commit
-  does not give the tree in `DASHBOARD_TREE`.
-- **ETL:** mega-indicators `main` and mega-boost from the mfb-dgbf forks
-  ([mega-indicators](https://github.com/mfb-dgbf/mega-indicators),
-  [mega-boost](https://github.com/mfb-dgbf/mega-boost): upstream `main` plus the
-  Togo execution table), only the folders in `INDICATORS_PATHS` and `BOOST_PATHS`.
+- **Dashboard:** a commit of `togo/main` on the
+  [mfb-dgbf fork](https://github.com/mfb-dgbf/rpf-country-dash): upstream `Togo`
+  (which includes upstream `main`) plus the Togo fixes not merged upstream yet. The
+  fetch stops if the commit does not give the tree in `DASHBOARD_TREE`.
+- **ETL:** `togo/main` of the mfb-dgbf forks
+  ([mega-indicators](https://github.com/mfb-dgbf/mega-indicators): upstream `main`;
+  [mega-boost](https://github.com/mfb-dgbf/mega-boost): upstream `main` plus the Togo
+  fixes), only the folders in `INDICATORS_PATHS` and `BOOST_PATHS`.
 
 To move a pin: `make dev-lock` pins the branches checked out beside this
 repository (below), once they are pushed to the mfb-dgbf forks; or edit
