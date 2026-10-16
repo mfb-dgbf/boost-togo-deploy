@@ -16,15 +16,30 @@ mkdir -p "$OUT"
 
 die() { echo "fetch-upstream: $*" >&2; exit 1; }
 
-# Says when the upstream ref has moved on; the pinned commit is still used.
+# The commit a remote ref points to; an annotated tag is peeled to its commit.
+remote_commit() {  # <url> <ref>
+  git ls-remote "$1" "$2" "$2^{}" \
+    | awk -v ref="$2" '$2 == ref "^{}" {peeled = $1} $2 == ref {plain = $1} END {print (peeled != "" ? peeled : plain)}'
+}
+
+# A branch may move on: the pinned commit is still used, with a note. A release tag
+# (refs/tags/...) must still point at the pinned commit, or the checkout fails.
 ref_note() {
   local url=$1 ref=$2 pinned=$3 current
-  current="$(git ls-remote "$url" "$ref" | cut -f1)"
-  if [ -z "$current" ]; then
-    echo "   note: $ref no longer exists upstream"
-  elif [ "$current" != "$pinned" ]; then
-    echo "   note: $ref is now at ${current:0:7}; upstream.lock pins ${pinned:0:7}"
-  fi
+  current="$(remote_commit "$url" "$ref")"
+  case "$ref" in
+    refs/tags/*)
+      [ -n "$current" ] || die "$ref no longer exists on $url"
+      [ "$current" = "$pinned" ] || die "$ref is at ${current:0:7} on $url; upstream.lock pins ${pinned:0:7}"
+      ;;
+    *)
+      if [ -z "$current" ]; then
+        echo "   note: $ref no longer exists upstream"
+      elif [ "$current" != "$pinned" ]; then
+        echo "   note: $ref is now at ${current:0:7}; upstream.lock pins ${pinned:0:7}"
+      fi
+      ;;
+  esac
 }
 
 new_repo() {
