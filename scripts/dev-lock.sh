@@ -11,7 +11,8 @@
 # lock then pins that branch and commit; for the dashboard, the commit's tree; for
 # mega-indicators, INDICATORS_PATHS becomes the folders of the notebooks that
 # local_runner.notebooks() lists for Togo. `make fetch` checks the result. The
-# file is left uncommitted: review it, commit it, push it.
+# file is left uncommitted: review it, commit it, push it. The formation/* branches
+# hold the developer path's reference code and are never pinned.
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 WORKSPACE="$(dirname "$REPO")"
@@ -33,6 +34,7 @@ if [ "${1:-}" = --status ]; then
     head=$(git -C "$dir" rev-parse HEAD)
     remote=$([ -n "$branch" ] && git ls-remote "$url" "refs/heads/$branch" | cut -f1 || true)
     if [ -z "$branch" ]; then pushed="HEAD détachée"
+    elif [ "${branch#formation/}" != "$branch" ]; then pushed="branche de formation : ne s'épingle pas"
     elif [ -z "$remote" ]; then pushed="branche absente"
     elif [ "$remote" = "$head" ]; then pushed="à jour"
     else pushed="diffère (${remote:0:7})"; fi
@@ -67,6 +69,9 @@ checked_out() {  # <directory> <url>
   [ -d "$dir/.git" ] || die "$dir absent : make dev-setup"
   BRANCH=$(git -C "$dir" branch --show-current)
   [ -n "$BRANCH" ] || die "$1 n'est sur aucune branche (HEAD détachée) : git switch <branche>"
+  case "$BRANCH" in
+    formation/*) die "$1 est sur $BRANCH, une branche de formation qui ne se déploie pas : git switch <branche de travail>" ;;
+  esac
   [ -z "$(git -C "$dir" status --porcelain --untracked-files=no)" ] \
     || die "$1 a des modifications non enregistrées : git commit, puis git push"
   COMMIT=$(git -C "$dir" rev-parse HEAD)
