@@ -278,11 +278,31 @@ timedatectl show --property=NTPSynchronized --property=Timezone 2>/dev/null | pa
 
 if [ "$NGINX" = 1 ]; then
   step "Nginx"
-  write_if_changed /etc/nginx/conf.d/00-boost-togo-security.conf "server_tokens off;" || true
-  nginx -t 2>&1 | tail -1
-  systemctl enable --now nginx >/dev/null 2>&1 || true
-  systemctl reload nginx 2>/dev/null || true
-  echo "installé ; le site HTTPS se configure après l'installation (docs/02-installation.md §2.8)"
+  # nginx refuses a directive given twice in the http block, so an existing server_tokens
+  # setting in nginx.conf or another conf.d file is left in charge.
+  security_conf=/etc/nginx/conf.d/00-boost-togo-security.conf
+  http_confs=(/etc/nginx/nginx.conf)
+  for f in /etc/nginx/conf.d/*.conf; do
+    [ -e "$f" ] && [ "$f" != "$security_conf" ] && http_confs+=("$f")
+  done
+  if grep -qsE '^[[:space:]]*server_tokens[[:space:]]' "${http_confs[@]}"; then
+    rm -f "$security_conf"
+    echo "server_tokens déjà réglé dans la configuration Nginx existante : conservé"
+  else
+    write_if_changed "$security_conf" "server_tokens off;" || true
+  fi
+  # The stack does not go through Nginx (the dashboard listens on 127.0.0.1:8080), so an
+  # invalid configuration is reported in full and the preparation goes on without reloading.
+  if nginx_test=$(nginx -t 2>&1); then
+    echo "${nginx_test##*$'\n'}"
+    systemctl enable --now nginx >/dev/null 2>&1 || true
+    systemctl reload nginx 2>/dev/null || true
+    echo "installé ; le site HTTPS se configure après l'installation (docs/02-installation.md §2.8)"
+  else
+    printf '%s\n' "$nginx_test" >&2
+    warn "configuration Nginx invalide (message ci-dessus) : Nginx n'est pas rechargé. La corriger
+avant de configurer le site HTTPS ; sur un poste de développement, relancer avec --no-nginx."
+  fi
 fi
 
 step "Terminé"
