@@ -110,6 +110,14 @@ class RunTest(unittest.TestCase):
             self.assertEqual(etl_run.main(), 1)
         self.assertEqual(ran, ["fine"])
 
+    def test_no_cache_clear_leaves_the_cache_and_the_exit_code_to_the_steps(self):
+        plan = [("inputs/fine", lambda: "ok", None)]
+        with mock.patch.object(etl_run, "steps", return_value=plan), \
+                mock.patch.object(etl_run, "clear_cache", return_value=False) as clear, \
+                mock.patch.object(sys, "argv", ["etl-run", "--no-cache-clear"]):
+            self.assertEqual(etl_run.main(), 0)
+        clear.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
