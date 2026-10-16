@@ -19,13 +19,16 @@ FILE ?=
 CONFIRM ?=
 
 .PHONY: help install up down restart status logs follow pipeline refresh-boundaries steps \
-        backup restore cache-clear psql fetch build package
+        backup restore cache-clear psql fetch build package \
+        dev-setup dev-db-up dev-db-down dev-db-status dev-db-reset dev-dashboard dev-pipeline \
+        dev-steps dev-test dev-psql dev-status dev-lock
 
 help: ## List the targets
-	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo
 	@echo "  Variables: SERVICE=db|dashboard  SINCE=24h  STEPS='mega-indicators/gdp.py ...'"
 	@echo "             FILE=<dump>  BACKUP_DIR=$(BACKUP_DIR)  KEEP_DAYS=$(KEEP_DAYS)"
+	@echo "             REPOS='dashboard indicators boost' (dev-lock)  DEV_DB=docker|native"
 
 install: ## Check, load and start an extracted package (./install.sh)
 	@test -x ./install.sh || { echo "install.sh is only in an extracted package"; exit 2; }
@@ -111,3 +114,55 @@ build: ## Build the images from the upstream checkouts (repository only)
 package: ## Build the offline installation package (repository only)
 	@test -n "$(IN_REPO)" || { echo "package needs the repository (upstream.lock)"; exit 2; }
 	scripts/package-release.sh --indicator-snapshot
+
+# Development outside Docker (repository only): the code of the sibling checkouts
+# runs on the machine, against a development database (scripts/dev-*.sh).
+REPO_ONLY = @test -n "$(IN_REPO)" || { echo "$@ needs the repository (upstream.lock)"; exit 2; }
+
+dev-setup: ## Dev: sibling clones, Python environments, .env, database (DEV_DB=native: no Docker)
+	$(REPO_ONLY)
+	scripts/dev-setup.sh $(if $(filter native,$(DEV_DB)),--native-db)
+
+dev-db-up: ## Dev: start the development database
+	$(REPO_ONLY)
+	scripts/dev-db.sh up
+
+dev-db-down: ## Dev: stop the development database; its data are kept
+	$(REPO_ONLY)
+	scripts/dev-db.sh down
+
+dev-db-status: ## Dev: the development database's address and tables
+	$(REPO_ONLY)
+	@scripts/dev-db.sh status
+
+dev-db-reset: ## Dev: empty the development database (asks for confirmation)
+	$(REPO_ONLY)
+	scripts/dev-db.sh reset
+
+dev-dashboard: ## Dev: the dashboard on 127.0.0.1:8050, reloaded on every change
+	$(REPO_ONLY)
+	scripts/dev-run.sh dashboard
+
+dev-pipeline: ## Dev: load the data with the sibling code: every step, or STEPS='...'
+	$(REPO_ONLY)
+	scripts/dev-run.sh pipeline $(STEPS)
+
+dev-steps: ## Dev: list the pipeline steps of the sibling code
+	$(REPO_ONLY)
+	@scripts/dev-run.sh steps
+
+dev-test: ## Dev: the tests of rpf-country-dash and of this repository
+	$(REPO_ONLY)
+	scripts/dev-run.sh test
+
+dev-psql: ## Dev: a SQL session on the development database
+	$(REPO_ONLY)
+	scripts/dev-run.sh psql
+
+dev-status: ## Dev: branch and commit of each sibling checkout, against upstream.lock
+	$(REPO_ONLY)
+	@scripts/dev-lock.sh --status
+
+dev-lock: ## Dev: pin the sibling checkouts' pushed branches in upstream.lock, then fetch
+	$(REPO_ONLY)
+	scripts/dev-lock.sh $(REPOS)

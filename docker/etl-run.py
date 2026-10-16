@@ -26,6 +26,8 @@ cleared.
   etl-run                  every step
   etl-run --list           the step names
   etl-run --only STEP...   only these steps, in the order above
+  etl-run --no-cache-clear the cache is left as it is; the exit code then
+                           depends on the steps only
 """
 import argparse
 import glob
@@ -210,6 +212,7 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--list", action="store_true", help="print the step names and exit")
     group.add_argument("--only", nargs="+", metavar="STEP", help="run only these steps")
+    parser.add_argument("--no-cache-clear", action="store_true", help="leave the dashboard's query cache as it is")
     args = parser.parse_args()
 
     # compose passes an unset .env value as an empty string; upstream's get_secret
@@ -248,7 +251,7 @@ def main():
         print(f"<== {name}: {status} ({seconds:.0f} s)", flush=True)
         results.append((name, status, seconds))
 
-    cache_cleared = clear_cache()
+    cache_cleared = args.no_cache_clear or clear_cache()
     width = max(len(name) for name, _, _ in results)
     print("\nsummary")
     for name, status, seconds in results:

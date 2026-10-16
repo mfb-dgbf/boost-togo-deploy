@@ -2,11 +2,12 @@
 # releases are built from main.
 #
 # The upstream code this repository builds, pinned by commit. Read by
-# scripts/fetch-upstream.sh, which checks every value below.
+# scripts/fetch-upstream.sh, which checks every value below. Written by
+# scripts/dev-lock.sh (make dev-lock) from the sibling checkouts, or by hand;
+# what a pinned commit brings is said in the commit that changes this file.
 #
-# Dashboard: one commit, or the merge of two, checked against the tree it must
-# produce (DASHBOARD_TREE). The commit below is on the mfb-dgbf fork: the dashboard
-# pinned on main plus the Agriculture page and its tests.
+# Dashboard: one commit, or the merge of two commits of the same repository,
+# checked against the tree it must produce (DASHBOARD_TREE).
 DASHBOARD_URL=https://github.com/mfb-dgbf/rpf-country-dash.git
 DASHBOARD_REFS="refs/heads/formation/exemple-b-agriculture"
 DASHBOARD_COMMITS="e6882888a13e5d65105efeae3e396a2f54ed8b9b"
@@ -14,16 +15,14 @@ DASHBOARD_TREE=3245838bb8669db4525451c04d7e087ecea1cbb5
 
 # Indicator ETL, from the mfb-dgbf fork of dime-worldbank/mega-indicators: only the
 # folders of the notebooks local_runner.notebooks() lists
-# (the repository's top-level files are always checked out). The commit adds
-# agriculture/fao_crop_production.py (FAOSTAT crops) to the fork's main.
+# (the repository's top-level files are always checked out).
 INDICATORS_URL=https://github.com/mfb-dgbf/mega-indicators.git
 INDICATORS_REF=refs/heads/formation/exemple-b-agriculture
 INDICATORS_COMMIT=042b43522a4847e2409760f2399a4305c625a2a7
-INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance agriculture"
+INDICATORS_PATHS="agriculture education geo health human_development pefa population poverty public_finance"
 
-# Togo BOOST ETL. The commit is on the mfb-dgbf fork: upstream main (f6db695) plus
-# Togo/TGO_execution.py, the budget-execution tables, then health sub-functions
-# and each region's latest outcome year, not merged upstream yet.
+# Togo BOOST ETL, from the mfb-dgbf fork of dime-worldbank/mega-boost: only the
+# folders of BOOST_PATHS.
 BOOST_URL=https://github.com/mfb-dgbf/mega-boost.git
 BOOST_REF=refs/heads/fix/togo-health-subfunc-outcome-year
 BOOST_COMMIT=b6679789767306152ab5e5e7ad5e8c5ae25832af
