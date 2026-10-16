@@ -17,7 +17,7 @@ dashboard or ETL code.
 | `upstream.lock` | pinned upstream commits |
 | `scripts/fetch-upstream.sh` | checks them out under `upstream/` |
 | `docker/` | Dockerfiles, ETL runner, ETL Python packages |
-| `compose.yaml` | services `db`, `dashboard`, `pipeline` |
+| `compose.yaml` | services `db`, `dashboard`, `pipeline`, and the optional `metabase` (profile `metabase`) |
 | `db/init/` | schemas, roles, empty GDL and PEFA tables |
 | `deploy/` | server preparation, offline install, Nginx site |
 | `scripts/package-release.sh` | offline installation package |
@@ -190,6 +190,25 @@ On a server installed from Git:
 Images built from the repository are tagged with the release name of the checked-out commit
 (`scripts/release-name.sh`): `AAAA.MM.N` on a `vAAAA.MM.N` tag, `dev-<commit>` otherwise. A package
 built on a tag is named `boost-togo-<version>`. The pipeline never runs during a deployment.
+
+## Metabase (optional)
+
+`make metabase-up` adds the missing secrets to `.env` (generated), creates the database `metabase`
+(Metabase's own data, dumped by `make backup`) with its owner role `metabase`, and the role
+`metabase_reader`, read-only on the schemas `boost` and `indicator` (including the tables the
+pipeline recreates, no access to `sboost4`), then starts Metabase on `127.0.0.1:3000`
+(`METABASE_BIND`). It can be run again. Without it, nothing changes: the service is in the compose
+profile `metabase`, and its settings default to empty values.
+
+Open it through an SSH tunnel or an Nginx site, create the administrator account straight away,
+then add the database: PostgreSQL, host `db`, port `5432`, database `prd_mega`, user
+`metabase_reader`, password `METABASE_READER_PASSWORD`. Keep `METABASE_ENCRYPTION_KEY` with `.env`.
+Usage statistics and update checks are off; the Java heap is 1 GB (`METABASE_JAVA_OPTS`).
+
+`make metabase-status`, `make metabase-down` (data kept). The image (`docker/metabase.Dockerfile`,
+pinned by digest, about 1 GB) goes into an offline package with
+`scripts/package-release.sh --with-metabase`. To remove Metabase: `make metabase-down`, then drop the
+database `metabase`, `DROP OWNED BY metabase_reader`, and drop the two roles.
 
 ## Offline package
 

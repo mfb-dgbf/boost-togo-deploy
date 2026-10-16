@@ -4,19 +4,24 @@
 # preparation script and field docs.
 #
 #   scripts/package-release.sh [--platform linux/amd64] [--indicator-snapshot]
+#                              [--with-metabase]
 #
 # The upstream code is checked out again from upstream.lock before the build.
 # --indicator-snapshot adds a pg_dump of the indicator schema taken from the
 # running local stack, for servers without outbound internet access.
+# --with-metabase adds the image of the optional Metabase service (about 1 GB),
+# so that make metabase-up works on a server without access to Docker Hub.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLATFORM="linux/amd64"
 SNAPSHOT=0
+METABASE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --platform) PLATFORM="$2"; shift 2 ;;
     --indicator-snapshot) SNAPSHOT=1; shift ;;
+    --with-metabase) METABASE=1; shift ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -47,7 +52,13 @@ echo "== building images for $PLATFORM (release $RELEASE)"
 export RELEASE DOCKER_DEFAULT_PLATFORM="$PLATFORM"
 docker compose --profile pipeline build
 
-for image in "boost-togo/dashboard:$RELEASE" "boost-togo/pipeline:$RELEASE" "boost-togo/postgres:$RELEASE"; do
+images=("boost-togo/dashboard:$RELEASE" "boost-togo/pipeline:$RELEASE" "boost-togo/postgres:$RELEASE")
+METABASE_IMAGE="$(awk '/image: boost-togo\/metabase:/ {print $2}' compose.yaml)"
+if [ "$METABASE" = 1 ]; then
+  docker compose --profile metabase build metabase
+  images+=("$METABASE_IMAGE")
+fi
+for image in "${images[@]}"; do
   file="$OUT/images/$(echo "${image%%:*}" | tr '/' '-').tar.gz"
   echo "== saving $image -> images/$(basename "$file")"
   docker save "$image" | gzip > "$file"
@@ -76,6 +87,7 @@ boost-togo-deploy: $DEPLOY_SHA
 $(cat upstream/SOURCES)
 postgres:         $POSTGRES_FROM
 postgres image:   $POSTGRES_ID
+metabase:         $([ "$METABASE" = 1 ] && echo "$METABASE_IMAGE ($(awk '/^FROM / {print $2}' docker/metabase.Dockerfile))" || echo "not included")
 built:            $(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
 

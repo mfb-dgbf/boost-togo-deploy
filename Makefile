@@ -29,11 +29,12 @@ VERSION ?=
 
 .PHONY: help install up down restart status logs follow pipeline refresh-boundaries steps \
         backup restore cache-clear psql deploy-check fetch build package deploy rollback releases release \
+        metabase-up metabase-down metabase-status \
         dev-setup dev-db-up dev-db-down dev-db-status dev-db-reset dev-dashboard dev-pipeline \
         dev-steps dev-test dev-psql dev-status dev-lock
 
 help: ## List the targets
-	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo
 	@echo "  Variables: SERVICE=db|dashboard  SINCE=24h  STEPS='mega-indicators/gdp.py ...'"
 	@echo "             FILE=<dump>  BACKUP_DIR=$(BACKUP_DIR)  KEEP_DAYS=$(KEEP_DAYS)"
@@ -52,8 +53,8 @@ up: ## Start the database and the dashboard, applying .env changes
 	   sleep 2; \
 	 done; echo "dashboard not answering on http://$$bind/ after 60 s: make logs SERVICE=dashboard"; exit 1
 
-down: ## Stop the stack; the database volume is kept
-	$(COMPOSE) down
+down: ## Stop the stack (Metabase included); the database volume is kept
+	$(COMPOSE) --profile metabase down
 
 restart: ## Restart the dashboard process
 	$(COMPOSE) restart dashboard
@@ -79,13 +80,19 @@ refresh-boundaries: ## Download the World Bank boundary files again at the next 
 steps: ## List the pipeline steps
 	@$(COMPOSE) run --rm -T pipeline --list
 
-backup: ## Dump prd_mega to BACKUP_DIR; dumps older than KEEP_DAYS are deleted
+backup: ## Dump prd_mega (and Metabase's database when present) to BACKUP_DIR; dumps older than KEEP_DAYS are deleted
 	@mkdir -p "$(BACKUP_DIR)"
 	@f="$(BACKUP_DIR)/$(if $(BACKUP_NAME),$(BACKUP_NAME),prd_mega-$$(date +%Y%m%d)).dump"; \
 	 $(COMPOSE) exec -T db pg_dump -U pipeline -d prd_mega -Fc > "$$f.part" \
 	   || { rm -f "$$f.part"; echo "backup failed"; exit 1; }; \
-	 mv "$$f.part" "$$f" && ls -lh "$$f"
-	@find "$(BACKUP_DIR)" -name 'prd_mega-*.dump' -mtime +$(KEEP_DAYS) -print -delete
+	 mv "$$f.part" "$$f" && ls -lh "$$f"; \
+	 if [ "$$($(COMPOSE) exec -T db psql -U pipeline -d prd_mega -Atc "SELECT 1 FROM pg_database WHERE datname = 'metabase'")" = 1 ]; then \
+	   m="$$(dirname "$$f")/metabase-$$(basename "$$f" | sed 's/^prd_mega-//')"; \
+	   $(COMPOSE) exec -T db pg_dump -U pipeline -d metabase -Fc > "$$m.part" \
+	     || { rm -f "$$m.part"; echo "backup of the metabase database failed"; exit 1; }; \
+	   mv "$$m.part" "$$m" && ls -lh "$$m"; \
+	 fi
+	@find "$(BACKUP_DIR)" \( -name 'prd_mega-*.dump' -o -name 'metabase-*.dump' \) -mtime +$(KEEP_DAYS) -print -delete
 
 restore: ## Replace the database with FILE=<dump> (asks for confirmation)
 	@test -n "$(FILE)" || { echo "usage: make restore FILE=$(BACKUP_DIR)/prd_mega-YYYYMMDD.dump"; exit 2; }
@@ -108,6 +115,15 @@ cache-clear: ## Empty the dashboard's query cache (after changing the database b
 	r = urllib.request.Request('http://localhost:8080/api/cache/clear', method='POST', \
 	headers={'X-Refresh-Token': os.environ['CACHE_REFRESH_TOKEN']}); \
 	print(urllib.request.urlopen(r).read().decode())"
+
+metabase-up: ## Optional Metabase on 127.0.0.1:3000 (METABASE_BIND): .env keys, its database and read-only role, start
+	deploy/metabase.sh up
+
+metabase-down: ## Stop Metabase; its database and roles are kept
+	deploy/metabase.sh down
+
+metabase-status: ## Metabase's container and health
+	@deploy/metabase.sh status
 
 psql: ## Open a SQL session on prd_mega
 	$(COMPOSE) exec db psql -U pipeline -d prd_mega
