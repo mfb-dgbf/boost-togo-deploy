@@ -1,14 +1,10 @@
 # The upstream code this repository builds, pinned by commit. Read by
-# scripts/fetch-upstream.sh, which checks every value below.
+# scripts/fetch-upstream.sh, which checks every value below. Written by
+# scripts/dev-lock.sh (make dev-lock) from the sibling checkouts, or by hand;
+# what a pinned commit brings is said in the commit that changes this file.
 #
-# Dashboard: one commit, or the merge of two, checked against the tree it must
-# produce (DASHBOARD_TREE). The commit below is on the mfb-dgbf fork: upstream Togo
-# (db5499d: money-axis units in the axis titles, regional and subnational
-# sentences, README on adding a chart) merged with fix/fiscal-balance-official-file:
-# the budget-execution page and its Excel exports (own tables, SIGFIP report
-# tables, compte administratif), the chart fixes (label placement, wording,
-# outcome year, trend sentences) and the fiscal balance on the DGBF's official
-# figures without the composite view, not merged upstream yet.
+# Dashboard: one commit, or the merge of two commits of the same repository,
+# checked against the tree it must produce (DASHBOARD_TREE).
 DASHBOARD_URL=https://github.com/mfb-dgbf/rpf-country-dash.git
 DASHBOARD_REFS="refs/heads/togo/deploy-20261016"
 DASHBOARD_COMMITS="093a029597b5f7c00ce30a03771d548835105429"
@@ -22,9 +18,8 @@ INDICATORS_REF=refs/heads/main
 INDICATORS_COMMIT=f3ba605a9ec4f5451b0a6fbc3e632e7150fd0ab6
 INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance"
 
-# Togo BOOST ETL. The commit is on the mfb-dgbf fork: upstream main (f6db695) plus
-# Togo/TGO_execution.py, the budget-execution tables, then health sub-functions
-# and each region's latest outcome year, not merged upstream yet.
+# Togo BOOST ETL, from the mfb-dgbf fork of dime-worldbank/mega-boost: only the
+# folders of BOOST_PATHS.
 BOOST_URL=https://github.com/mfb-dgbf/mega-boost.git
 BOOST_REF=refs/heads/fix/togo-health-subfunc-outcome-year
 BOOST_COMMIT=b6679789767306152ab5e5e7ad5e8c5ae25832af

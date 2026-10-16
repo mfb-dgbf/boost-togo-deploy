@@ -1,0 +1,31 @@
+# The development database for running the code outside Docker (scripts/dev-db.sh,
+# make dev-db-up): the image and first-start scripts of the db service of
+# compose.yaml, published on 127.0.0.1:DEV_DB_PORT so that code running on the
+# machine reaches it. A project of its own with its own data volume, beside the
+# stack of compose.yaml.
+name: boost-togo-dev
+
+services:
+  db:
+    image: boost-togo/postgres:${RELEASE:-dev}
+    build:
+      context: ./docker
+      dockerfile: postgres.Dockerfile
+    environment:
+      POSTGRES_DB: prd_mega
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: ${PIPELINE_DB_PASSWORD:?set in .env}
+      DASHBOARD_DB_PASSWORD: ${DASHBOARD_DB_PASSWORD:?set in .env}
+    volumes:
+      - devpgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-55432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U pipeline -d prd_mega"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  devpgdata:
