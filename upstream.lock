@@ -2,11 +2,12 @@
 # budget »); releases are built from main.
 #
 # The upstream code this repository builds, pinned by commit. Read by
-# scripts/fetch-upstream.sh, which checks every value below.
+# scripts/fetch-upstream.sh, which checks every value below. Written by
+# scripts/dev-lock.sh (make dev-lock) from the sibling checkouts, or by hand;
+# what a pinned commit brings is said in the commit that changes this file.
 #
-# Dashboard: one commit, or the merge of two, checked against the tree it must
-# produce (DASHBOARD_TREE). The commit below is on the mfb-dgbf fork: upstream
-# Togo (db5499d) plus the budget-execution page, its Excel exports and its tests.
+# Dashboard: one commit, or the merge of two commits of the same repository,
+# checked against the tree it must produce (DASHBOARD_TREE).
 DASHBOARD_URL=https://github.com/mfb-dgbf/rpf-country-dash.git
 DASHBOARD_REFS="refs/heads/formation/exemple-a-execution"
 DASHBOARD_COMMITS="726f1ac99d52fca1d6e9a4b2eb915011ee47b26c"
@@ -20,8 +21,8 @@ INDICATORS_REF=refs/heads/main
 INDICATORS_COMMIT=f3ba605a9ec4f5451b0a6fbc3e632e7150fd0ab6
 INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance"
 
-# Togo BOOST ETL. The commit is on the mfb-dgbf fork: upstream main (f6db695) plus
-# Togo/TGO_execution.py, which writes the budget-execution tables.
+# Togo BOOST ETL, from the mfb-dgbf fork of dime-worldbank/mega-boost: only the
+# folders of BOOST_PATHS.
 BOOST_URL=https://github.com/mfb-dgbf/mega-boost.git
 BOOST_REF=refs/heads/formation/exemple-a-execution
 BOOST_COMMIT=f771aedf480b4f69b830a0656951d2b95eb230a0
