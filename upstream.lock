@@ -1,26 +1,25 @@
+# Training branch: builds example B of the developer path (« Agriculture »);
+# releases are built from main.
+#
 # The upstream code this repository builds, pinned by commit. Read by
 # scripts/fetch-upstream.sh, which checks every value below.
 #
 # Dashboard: one commit, or the merge of two, checked against the tree it must
-# produce (DASHBOARD_TREE). The commit below is on the mfb-dgbf fork: upstream Togo
-# (db5499d: money-axis units in the axis titles, regional and subnational
-# sentences, README on adding a chart) merged with fix/fiscal-balance-official-file:
-# the budget-execution page and its Excel exports (own tables, SIGFIP report
-# tables, compte administratif), the chart fixes (label placement, wording,
-# outcome year, trend sentences) and the fiscal balance on the DGBF's official
-# figures without the composite view, not merged upstream yet.
+# produce (DASHBOARD_TREE). The commit below is on the mfb-dgbf fork: the dashboard
+# pinned on main plus the Agriculture page and its tests.
 DASHBOARD_URL=https://github.com/mfb-dgbf/rpf-country-dash.git
-DASHBOARD_REFS="refs/heads/togo/deploy-20261016"
-DASHBOARD_COMMITS="093a029597b5f7c00ce30a03771d548835105429"
-DASHBOARD_TREE=b32873976d73664820ca279b43c06fa9e6f5679e
+DASHBOARD_REFS="refs/heads/formation/exemple-b-agriculture"
+DASHBOARD_COMMITS="e6882888a13e5d65105efeae3e396a2f54ed8b9b"
+DASHBOARD_TREE=3245838bb8669db4525451c04d7e087ecea1cbb5
 
 # Indicator ETL, from the mfb-dgbf fork of dime-worldbank/mega-indicators: only the
 # folders of the notebooks local_runner.notebooks() lists
-# (the repository's top-level files are always checked out).
+# (the repository's top-level files are always checked out). The commit adds
+# agriculture/fao_crop_production.py (FAOSTAT crops) to the fork's main.
 INDICATORS_URL=https://github.com/mfb-dgbf/mega-indicators.git
-INDICATORS_REF=refs/heads/main
-INDICATORS_COMMIT=f3ba605a9ec4f5451b0a6fbc3e632e7150fd0ab6
-INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance"
+INDICATORS_REF=refs/heads/formation/exemple-b-agriculture
+INDICATORS_COMMIT=042b43522a4847e2409760f2399a4305c625a2a7
+INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance agriculture"
 
 # Togo BOOST ETL. The commit is on the mfb-dgbf fork: upstream main (f6db695) plus
 # Togo/TGO_execution.py, the budget-execution tables, then health sub-functions
