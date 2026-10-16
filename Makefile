@@ -9,6 +9,12 @@ COMPOSE := docker compose
 # An installation package has no source to build from: its images are loaded.
 IN_REPO := $(wildcard upstream.lock)
 NO_BUILD := $(if $(IN_REPO),,--no-build)
+# Image tag: in the repository, the release of the checked-out commit
+# (scripts/release-name.sh); in an installation package, RELEASE from .env.
+ifneq ($(IN_REPO),)
+RELEASE ?= $(shell scripts/release-name.sh)
+export RELEASE
+endif
 
 BACKUP_DIR ?= /var/backups/boost-togo
 KEEP_DAYS ?= 30
@@ -17,9 +23,12 @@ SERVICE ?=
 STEPS ?=
 FILE ?=
 CONFIRM ?=
+BACKUP_NAME ?=
+REF ?=
+VERSION ?=
 
 .PHONY: help install up down restart status logs follow pipeline refresh-boundaries steps \
-        backup restore cache-clear psql fetch build package \
+        backup restore cache-clear psql deploy-check fetch build package deploy rollback releases release \
         dev-setup dev-db-up dev-db-down dev-db-status dev-db-reset dev-dashboard dev-pipeline \
         dev-steps dev-test dev-psql dev-status dev-lock
 
@@ -29,6 +38,7 @@ help: ## List the targets
 	@echo "  Variables: SERVICE=db|dashboard  SINCE=24h  STEPS='mega-indicators/gdp.py ...'"
 	@echo "             FILE=<dump>  BACKUP_DIR=$(BACKUP_DIR)  KEEP_DAYS=$(KEEP_DAYS)"
 	@echo "             REPOS='dashboard indicators boost' (dev-lock)  DEV_DB=docker|native"
+	@echo "             REF=v2026.10.1 (deploy)  VERSION=2026.10.1 (release)  BACKUP_NAME=<name> (backup)"
 
 install: ## Check, load and start an extracted package (./install.sh)
 	@test -x ./install.sh || { echo "install.sh is only in an extracted package"; exit 2; }
@@ -71,7 +81,7 @@ steps: ## List the pipeline steps
 
 backup: ## Dump prd_mega to BACKUP_DIR; dumps older than KEEP_DAYS are deleted
 	@mkdir -p "$(BACKUP_DIR)"
-	@f="$(BACKUP_DIR)/prd_mega-$$(date +%Y%m%d).dump"; \
+	@f="$(BACKUP_DIR)/$(if $(BACKUP_NAME),$(BACKUP_NAME),prd_mega-$$(date +%Y%m%d)).dump"; \
 	 $(COMPOSE) exec -T db pg_dump -U pipeline -d prd_mega -Fc > "$$f.part" \
 	   || { rm -f "$$f.part"; echo "backup failed"; exit 1; }; \
 	 mv "$$f.part" "$$f" && ls -lh "$$f"
@@ -102,6 +112,13 @@ cache-clear: ## Empty the dashboard's query cache (after changing the database b
 psql: ## Open a SQL session on prd_mega
 	$(COMPOSE) exec db psql -U pipeline -d prd_mega
 
+deploy-check: ## The dashboard answers HTTP 200 and its own code reads the database
+	@$(MAKE) --no-print-directory status
+	@$(COMPOSE) exec -T dashboard python -c "from queries import QueryService; \
+	df = QueryService().execute_query(\"SELECT count(*) AS n FROM information_schema.tables \
+	WHERE table_schema IN ('boost', 'indicator')\", persistent=False); \
+	print(f'database read by the dashboard: {int(df.iloc[0, 0])} tables in boost and indicator')"
+
 fetch: ## Check out the upstream code pinned in upstream.lock (repository only)
 	@test -n "$(IN_REPO)" || { echo "fetch needs the repository (upstream.lock)"; exit 2; }
 	scripts/fetch-upstream.sh
@@ -114,6 +131,22 @@ build: ## Build the images from the upstream checkouts (repository only)
 package: ## Build the offline installation package (repository only)
 	@test -n "$(IN_REPO)" || { echo "package needs the repository (upstream.lock)"; exit 2; }
 	scripts/package-release.sh --indicator-snapshot
+
+deploy: ## Deploy REF (a vAAAA.MM.N tag or a branch): backup, build, start, check; back on failure (repository only)
+	@test -n "$(IN_REPO)" || { echo "deploy needs the repository (upstream.lock)"; exit 2; }
+	scripts/deploy.sh $(REF)
+
+rollback: ## Back to the release deployed before the current one, from its images (repository only)
+	@test -n "$(IN_REPO)" || { echo "rollback needs the repository (upstream.lock)"; exit 2; }
+	scripts/deploy.sh --rollback
+
+releases: ## Releases deployed from this clone, newest last (repository only)
+	@test -n "$(IN_REPO)" || { echo "releases needs the repository (upstream.lock)"; exit 2; }
+	@scripts/deploy.sh --history
+
+release: ## Tag VERSION=AAAA.MM.N: fork tags at the pinned commits, upstream.lock on them, deploy tag (repository only)
+	@test -n "$(IN_REPO)" || { echo "release needs the repository (upstream.lock)"; exit 2; }
+	scripts/release.sh $(VERSION)
 
 # Development outside Docker (repository only): the code of the sibling checkouts
 # runs on the machine, against a development database (scripts/dev-*.sh).

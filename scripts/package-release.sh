@@ -31,7 +31,10 @@ if [ -z "$(git branch -r --contains HEAD)" ]; then
   exit 1
 fi
 DEPLOY_SHA="$(git rev-parse --short HEAD)"
-RELEASE="$(date +%Y%m%d)-${DEPLOY_SHA}"
+# A package of a deploy tag vAAAA.MM.N carries its release name; any other commit,
+# the build date and the commit.
+RELEASE="$(scripts/release-name.sh)"
+case "$RELEASE" in dev-*) RELEASE="$(date +%Y%m%d)-${DEPLOY_SHA}" ;; esac
 
 scripts/fetch-upstream.sh
 

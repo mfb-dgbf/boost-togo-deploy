@@ -4,17 +4,20 @@
 # upstream.lock. Run as root:
 #
 #   sudo ./install-from-git.sh [--dir /opt/boost-togo/boost-togo-deploy]
-#        [--ref main] [--workbook FILE.xlsx] [--pefa-dir DIR] [--no-pipeline]
+#        [--ref main|vAAAA.MM.N|latest] [--workbook FILE.xlsx] [--pefa-dir DIR] [--no-pipeline]
 #        [--skip-prerequisites] [--git-ppa] [prerequisites.sh options]
 #
 # The script can also be downloaded on its own; it clones the repository.
 #   1. git 2.38 or later (make fetch uses git merge-tree --write-tree);
 #      --git-ppa installs it from ppa:git-core/ppa where Ubuntu's is older
-#   2. clone (or update) the repository into --dir
+#   2. clone (or update) the repository into --dir, on --ref: a branch, a deploy
+#      tag vAAAA.MM.N, or latest (the highest of these tags)
 #   3. deploy/prerequisites.sh: Docker, make, Nginx, firewall, account boost
 #      (--no-firewall, --ssh-keys-only, --no-swap, --no-nginx are passed on)
 #   4. as boost: .env with generated secrets (an existing .env is kept),
-#      data/togo and data/pefa, make fetch build up, then make pipeline
+#      data/togo and data/pefa, scripts/deploy.sh (dump of a running database,
+#      images built when missing, start, check, back to the previous release on
+#      failure), then make pipeline
 #
 # GDL_API_TOKEN, if set in the environment, is written into a new .env.
 # Needs outbound HTTPS to GitHub, Docker Hub, PyPI and the Ubuntu mirrors;
@@ -32,11 +35,11 @@ GIT_PPA=0
 BOOST_USER=boost
 PREREQ_ARGS=()
 
-usage() { sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,/^set -e/p' "$0" | sed -n 's/^# \{0,1\}//p'; exit "${1:-0}"; }
 while [ $# -gt 0 ]; do
   case "$1" in
     --dir) DIR="${2:?--dir needs a path}"; shift 2 ;;
-    --ref) REF="${2:?--ref needs a branch or tag}"; shift 2 ;;
+    --ref) REF="${2:?--ref needs a branch, a tag vAAAA.MM.N or latest}"; shift 2 ;;
     --workbook) WORKBOOK="${2:?--workbook needs a file}"; shift 2 ;;
     --pefa-dir) PEFA_DIR="${2:?--pefa-dir needs a directory}"; shift 2 ;;
     --no-pipeline) PIPELINE=0; shift ;;
@@ -83,16 +86,27 @@ step "Dépôt ($REPO_URL, $REF) dans $DIR"
 # The clone belongs to the service account; root works on it through safe.directory.
 repo_git() { git -c safe.directory="$DIR" -C "$DIR" "$@"; }
 if [ -d "$DIR/.git" ]; then
-  repo_git fetch -q origin "$REF"
-  repo_git checkout -q "$REF"
-  repo_git merge -q --ff-only "origin/$REF" || die "$DIR a des modifications locales : mise à jour impossible en avance rapide"
-  echo "dépôt mis à jour"
+  repo_git fetch -q --tags origin
 else
   [ ! -e "$DIR" ] || [ -z "$(ls -A "$DIR")" ] || die "$DIR existe et n'est pas vide"
   mkdir -p "$(dirname "$DIR")"
-  git clone -q --branch "$REF" "$REPO_URL" "$DIR"
+  git clone -q "$REPO_URL" "$DIR"
   echo "dépôt cloné"
 fi
+if [ "$REF" = latest ]; then
+  REF=$(repo_git tag --list 'v[0-9][0-9][0-9][0-9].[0-9][0-9].*' | sort -V | tail -1)
+  [ -n "$REF" ] || die "aucune étiquette vAAAA.MM.N sur $REPO_URL"
+  echo "latest : $REF"
+fi
+# A deploy tag is checked out as is; a branch is brought level with origin.
+if repo_git rev-parse -q --verify "refs/tags/$REF^{commit}" >/dev/null; then
+  repo_git -c advice.detachedHead=false checkout -q --detach "refs/tags/$REF"
+else
+  repo_git fetch -q origin "$REF"
+  repo_git checkout -q "$REF"
+  repo_git merge -q --ff-only "origin/$REF" || die "$DIR a des modifications locales : mise à jour impossible en avance rapide"
+fi
+echo "dépôt sur $REF"
 repo_git log --oneline -1
 
 if [ "$PREREQUISITES" = 1 ]; then
@@ -137,8 +151,8 @@ fi
 ls data/togo/*.xlsx >/dev/null 2>&1 || echo "ATTENTION : aucun classeur .xlsx dans data/togo : les étapes BOOST échoueront (guide DevOps, §6)"
 ls data/pefa/*.csv >/dev/null 2>&1 || echo "ATTENTION : aucun fichier PEFA dans data/pefa : l'étape PEFA échouera (guide DevOps, §2.7)"
 
-step "Code fixé, images et démarrage (make fetch build up)"
-as_boost make fetch build up
+step "Déploiement (scripts/deploy.sh)"
+as_boost scripts/deploy.sh
 
 if [ "$PIPELINE" = 1 ]; then
   step "Chargement des données (make pipeline)"

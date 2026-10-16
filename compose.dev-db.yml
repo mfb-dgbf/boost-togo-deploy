@@ -7,7 +7,7 @@ name: boost-togo-dev
 
 services:
   db:
-    image: boost-togo/postgres:${RELEASE:-dev}
+    image: boost-togo/postgres:dev
     build:
       context: ./docker
       dockerfile: postgres.Dockerfile

@@ -4,8 +4,9 @@
 #
 # Verifies the image archives, loads them, creates .env with generated
 # secrets if it does not exist (an existing .env is kept), creates the input
-# folders and starts the database and the dashboard. Data loading is a
-# separate step: make pipeline
+# folders, dumps the database already in place (make backup, named for the new
+# release), starts the database and the dashboard and checks them (make
+# deploy-check). Data loading is a separate step: make pipeline
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -65,9 +66,21 @@ step "Répertoires d'entrée"
 mkdir -p data/togo data/pefa
 echo "data/togo : exports BOOST (.xlsx) ; data/pefa : pefa_2011_bronze.csv et pefa_2016_bronze.csv (pefa.org)"
 
+step "Sauvegarde de la base en place"
+if docker volume inspect boost-togo_pgdata >/dev/null 2>&1; then
+  docker compose up -d --wait --no-build db
+  make --no-print-directory backup BACKUP_NAME="prd_mega-$(date +%Y%m%d-%H%M)-avant-$release"
+else
+  echo "aucune base : première installation"
+fi
+
 step "Démarrage"
 docker compose up -d --wait --no-build
 docker compose ps --format 'table {{.Service}}\t{{.Image}}\t{{.Status}}'
+
+step "Contrôle"
+make --no-print-directory deploy-check \
+  || die "le tableau de bord ne passe pas le contrôle. Revenir à la version précédente : docker compose down ici, puis make up dans le répertoire de l'ancien paquet (guide DevOps, §4.3)"
 
 bind=$(awk -F= '/^DASHBOARD_BIND=/ {print $2}' .env)
 bind=${bind:-127.0.0.1:8080}

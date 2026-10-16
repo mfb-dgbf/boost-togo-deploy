@@ -4,3 +4,5 @@ dist/
 .env
 __pycache__/
 *.pyc
+# Releases deployed from this clone (scripts/deploy.sh)
+.releases
