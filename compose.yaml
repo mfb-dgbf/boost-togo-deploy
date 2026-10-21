@@ -54,6 +54,11 @@ services:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-fr}
       # Last year with closed accounts: charts of executed spending stop there.
       END_YEAR: ${END_YEAR:-2025}
+      # Sections shown on this deployment. HIDDEN_CHARTS set to nothing hides no
+      # chart, so its default applies only when the variable is absent.
+      SHOW_SUBNATIONAL: ${SHOW_SUBNATIONAL:-false}
+      HIDDEN_CHARTS: ${HIDDEN_CHARTS-education-outcome,health-outcome}
+      SHOW_NARRATIVE_INTERPRETATION: ${SHOW_NARRATIVE_INTERPRETATION:-false}
       DEFAULT_ROOT_PATH: ${DEFAULT_ROOT_PATH:-/}
       # One process: /api/cache/clear resets in-process caches (server_store)
       # only in the worker that receives it. Scale with --threads, not --workers.

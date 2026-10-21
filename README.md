@@ -120,6 +120,12 @@ token or the PEFA files, those tables stay empty and the other steps run.
 charts of executed spending stop there, charts of the budget alone do not.
 Raise it once the next year's accounts are closed, then `make up`.
 
+Three settings in `.env` choose the dashboard sections, then `make up`:
+`SHOW_SUBNATIONAL` (`false`: no "Across space" tab on the overview, education
+and health pages), `HIDDEN_CHARTS` (chart sections removed, by chart id:
+`education-outcome,health-outcome`) and `SHOW_NARRATIVE_INTERPRETATION`
+(`false`: narratives without their interpretation sentences).
+
 ## Development without Docker
 
 The upstream code runs on the machine, from clones of the forks beside this

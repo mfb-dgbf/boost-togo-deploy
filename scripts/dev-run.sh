@@ -39,8 +39,12 @@ case "$command" in
     COUNTRIES=$(env_value COUNTRIES Togo)
     DEFAULT_LANGUAGE=$(env_value DEFAULT_LANGUAGE fr)
     END_YEAR=$(env_value END_YEAR 2025)
+    SHOW_SUBNATIONAL=$(env_value SHOW_SUBNATIONAL false)
+    HIDDEN_CHARTS=$(env_value_or_empty HIDDEN_CHARTS education-outcome,health-outcome)
+    SHOW_NARRATIVE_INTERPRETATION=$(env_value SHOW_NARRATIVE_INTERPRETATION false)
     export DB_BACKEND=postgres POSTGRES_DSN="$DASHBOARD_DSN" QUERY_CACHE_DIR="$DEV/cache/queries" \
       SECRET_KEY CACHE_REFRESH_TOKEN AUTH_ENABLED PUBLIC_ONLY COUNTRIES DEFAULT_LANGUAGE END_YEAR \
+      SHOW_SUBNATIONAL HIDDEN_CHARTS SHOW_NARRATIVE_INTERPRETATION \
       DEFAULT_ROOT_PATH=/ HOST=127.0.0.1 PORT="$DEV_PORT"
     cd "$WORKSPACE/rpf-country-dash"
     echo "tableau de bord : http://127.0.0.1:$DEV_PORT/ (code de $PWD, base 127.0.0.1:$DEV_DB_PORT)"

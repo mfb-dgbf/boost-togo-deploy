@@ -24,6 +24,16 @@ env_value() {  # <key> [default]
   printf '%s' "${value:-${2:-}}"
 }
 
+env_value_or_empty() {  # <key> <default>: as env_value, but a key set to nothing stays empty
+  if [ -n "${!1+x}" ]; then
+    printf '%s' "${!1}"
+  elif grep -q "^$1=" "$REPO/.env"; then
+    sed -n "s/^$1=//p" "$REPO/.env" | tail -1
+  else
+    printf '%s' "$2"
+  fi
+}
+
 DEV_DB=$(env_value DEV_DB docker)
 case "$DEV_DB" in
   docker) DEV_DB_PORT=$(env_value DEV_DB_PORT 55432) ;;
