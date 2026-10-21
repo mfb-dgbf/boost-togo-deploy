@@ -6,9 +6,9 @@
 # Dashboard: one commit, or the merge of two commits of the same repository,
 # checked against the tree it must produce (DASHBOARD_TREE).
 DASHBOARD_URL=https://github.com/mfb-dgbf/rpf-country-dash.git
-DASHBOARD_REFS="refs/tags/togo-2026.10.1"
-DASHBOARD_COMMITS="5186932e162ad710e6077a32b055238640d8fece"
-DASHBOARD_TREE=5d73d2f2c55497deb856cbd121684d12edeec5c4
+DASHBOARD_REFS="refs/heads/togo/main"
+DASHBOARD_COMMITS="12c0db7532e61b64dbacf8ab12c913db7228fc21"
+DASHBOARD_TREE=a91753dd848d0d57f2e95d681d28e4e32bef3968
 
 # Indicator ETL, from the mfb-dgbf fork of dime-worldbank/mega-indicators: only the
 # folders of the notebooks local_runner.notebooks() lists
