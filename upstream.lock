@@ -14,13 +14,13 @@ DASHBOARD_TREE=a91753dd848d0d57f2e95d681d28e4e32bef3968
 # folders of the notebooks local_runner.notebooks() lists
 # (the repository's top-level files are always checked out).
 INDICATORS_URL=https://github.com/mfb-dgbf/mega-indicators.git
-INDICATORS_REF=refs/tags/togo-2026.10.1
-INDICATORS_COMMIT=f3ba605a9ec4f5451b0a6fbc3e632e7150fd0ab6
+INDICATORS_REF=refs/heads/togo/main
+INDICATORS_COMMIT=ece50b518c299fd248bd6a2f4d9fc033e2c22420
 INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance"
 
 # Togo BOOST ETL, from the mfb-dgbf fork of dime-worldbank/mega-boost: only the
 # folders of BOOST_PATHS.
 BOOST_URL=https://github.com/mfb-dgbf/mega-boost.git
-BOOST_REF=refs/tags/togo-2026.10.1
-BOOST_COMMIT=39e4ac7fb0c0cbd54da0e7b3c75e4da7ec0f4cae
+BOOST_REF=refs/heads/togo/main
+BOOST_COMMIT=0e489c92ed1438272c5759bed1b5600a3dd1e883
 BOOST_PATHS="Togo"
