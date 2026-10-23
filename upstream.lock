@@ -6,7 +6,7 @@
 # Dashboard: one commit, or the merge of two commits of the same repository,
 # checked against the tree it must produce (DASHBOARD_TREE).
 DASHBOARD_URL=https://github.com/mfb-dgbf/rpf-country-dash.git
-DASHBOARD_REFS="refs/heads/togo/main"
+DASHBOARD_REFS="refs/tags/togo-2026.10.2"
 DASHBOARD_COMMITS="12c0db7532e61b64dbacf8ab12c913db7228fc21"
 DASHBOARD_TREE=a91753dd848d0d57f2e95d681d28e4e32bef3968
 
@@ -14,13 +14,13 @@ DASHBOARD_TREE=a91753dd848d0d57f2e95d681d28e4e32bef3968
 # folders of the notebooks local_runner.notebooks() lists
 # (the repository's top-level files are always checked out).
 INDICATORS_URL=https://github.com/mfb-dgbf/mega-indicators.git
-INDICATORS_REF=refs/heads/togo/main
+INDICATORS_REF=refs/tags/togo-2026.10.2
 INDICATORS_COMMIT=ece50b518c299fd248bd6a2f4d9fc033e2c22420
 INDICATORS_PATHS="education geo health human_development pefa population poverty public_finance"
 
 # Togo BOOST ETL, from the mfb-dgbf fork of dime-worldbank/mega-boost: only the
 # folders of BOOST_PATHS.
 BOOST_URL=https://github.com/mfb-dgbf/mega-boost.git
-BOOST_REF=refs/heads/togo/main
+BOOST_REF=refs/tags/togo-2026.10.2
 BOOST_COMMIT=0e489c92ed1438272c5759bed1b5600a3dd1e883
 BOOST_PATHS="Togo"
